@@ -6,15 +6,17 @@ import {
   CardAction,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/services/api";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircleIcon } from "lucide-react";
 
 export const Register = () => {
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -33,6 +35,7 @@ export const Register = () => {
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     try {
       const res = await api.post("/auth/register", form);
 
@@ -41,13 +44,27 @@ export const Register = () => {
       navigate("/login");
 
       console.log(form);
-    } catch (error) {
-      console.log(error);
+    } catch (err: any) {
+      setError(err.response.data.message);
+      setTimeout(() => {
+        setError("");
+      }, 5000);
     }
   };
 
   return (
     <>
+      {error && (
+        <Alert
+          variant="destructive"
+          className="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-96 shadow-lg"
+        >
+          <AlertCircleIcon />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="relative min-h-screen w-screen flex items-center justify-center">
         <div
           className="absolute inset-0 -z-10 h-full w-full bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,_#000_30%,_transparent_70%)]"

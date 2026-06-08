@@ -5,6 +5,8 @@ import { Register } from "./pages/Register";
 import { Profile } from "./pages/Profile";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { Home } from "./pages/Home";
+import { CreateThread } from "./pages/CreaeThread";
+import { DetailThread } from "./pages/DetailThread";
 
 function App() {
   return (
@@ -27,7 +29,22 @@ function App() {
               <Home />
             </ProtectedRoute>
           }
-          
+        />
+        <Route
+          path="/CreateThread"
+          element={
+            <ProtectedRoute>
+              <CreateThread />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/thread/:threadId"
+          element={
+            <ProtectedRoute>
+              <DetailThread />
+            </ProtectedRoute>
+          }
         />
       </Routes>
     </BrowserRouter>

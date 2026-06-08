@@ -11,9 +11,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { UserDropdown } from "./UserDrop";
-import { House } from 'lucide-react';
+import { CirclePlus, House, UserIcon } from "lucide-react";
 
 export const ComSidebar = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -33,13 +34,36 @@ export const ComSidebar = () => {
             <SidebarGroupLabel className="text-lg font-bold">
               Circle
             </SidebarGroupLabel>
-
+            <SidebarTrigger />
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton onClick={() => navigate("/Home")}>
-                    <span> <House /></span>
+                    <span>
+                      {" "}
+                      <House />
+                    </span>
                     <span>Home</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => navigate("/CreateThread")}>
+                    <span>
+                      {" "}
+                      <CirclePlus />
+                    </span>
+                    <span>Create Thread</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => navigate("/profile")}>
+                    <span>
+                      {" "}
+                      <UserIcon/>
+                    </span>
+                    <span>Profile</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 

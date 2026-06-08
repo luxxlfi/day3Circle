@@ -18,6 +18,25 @@ export const profile = async (req: Request, res: Response) => {
         photo_profile: true,
         bio: true,
         createAt: true,
+
+        threads: {
+          orderBy: {
+            created_at: "desc",
+          },
+
+          include: {
+            likes: true,
+            thread: true,
+            author: {
+              select: {
+                id: true,
+                username: true,
+                full_name: true,
+                photo_profile: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -27,9 +46,17 @@ export const profile = async (req: Request, res: Response) => {
       });
     }
 
+    const userWithLikeStatus = {
+      ...user,
+      threads: user.threads.map((item) => ({
+        ...item,
+        isLiked: item.likes.some((like) => like.user_id === userLogin.id),
+      })),
+    };
+
     return res.status(200).json({
       message: "profile berhasil di ambil",
-      deta: user,
+      deta: userWithLikeStatus,
     });
   } catch (error) {
     return res.status(500).json({

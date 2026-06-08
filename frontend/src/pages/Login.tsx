@@ -16,11 +16,14 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircleIcon } from "lucide-react";
 
 export const Login = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [email, setEmail] = useState("");
   const [password, setPasword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -38,8 +41,12 @@ export const Login = () => {
       );
       navigate("/profile");
       console.log("login nih", res.data);
-    } catch (error) {
-      console.log(error);
+    } catch (err: any) {
+      setError(err.response.data.message);
+
+      setTimeout(() => {
+        setError("");
+      }, 5000);
     }
   };
 
@@ -63,6 +70,17 @@ export const Login = () => {
     //   <button onClick={handleLogin}>Login</button>
     // </div>
     <>
+      {error && (
+        <Alert
+          variant="destructive"
+          className="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-96 shadow-lg"
+        >
+          <AlertCircleIcon />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="relative min-h-screen w-screen flex items-center justify-center overflow-hidden bg-[#f8fafc]">
         <div
           className="absolute inset-0 z-0 h-full w-full bg-[size:20px_30px]"
