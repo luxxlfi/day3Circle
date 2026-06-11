@@ -1,11 +1,14 @@
 import type { RootState } from "@/app/store";
 import { ComSidebar } from "@/components/Sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { socket } from "@/lib/socket";
 import { api } from "@/services/api";
-import { Heart, MessageCircle } from "lucide-react";
+import { Heart, ImageIcon, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
@@ -46,6 +49,7 @@ export const DetailThread = () => {
   const token = useSelector((state: RootState) => state.auth.token);
   const user = useSelector((state: RootState) => state.auth.user);
   const [replyContent, setReplyContent] = useState("");
+  const [replyImage, setReplyImage] = useState<File | null>(null);
 
   const GetThread = async () => {
     const res = await api.get(`/thread/${threadId}`, {
@@ -75,24 +79,56 @@ export const DetailThread = () => {
     setLiked(res.data.liked);
     setLikeTotal((prev) => (res.data.liked ? prev + 1 : prev - 1));
   };
+
   const handleCreateReply = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    await api.post(
-      `/thread/${threadId}/reply`,
-      {
-        content: replyContent,
-      },
-      {
+    console.log("threadId:", threadId);
+
+    if (!replyContent.trim() && !replyImage) {
+      alert("Reply tidak boleh kosong");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("content", replyContent);
+
+    if (replyImage) {
+      formData.append("image", replyImage);
+    }
+    try {
+      await api.post(`/thread/${threadId}/reply`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      },
-    );
+      });
+    } catch (error) {
+      alert("Gagal mengirim reply, coba lagi");
+      console.error(error);
+    }
 
     setReplyContent("");
-    GetThread();
+    setReplyImage(null);
   };
+
+  useEffect(() => {
+    socket.on("reply:new", (data) => {
+      if (Number(data.threadId) !== Number(threadId)) return;
+
+      setThread((prev) => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          thread: [...prev.thread, data.reply],
+        };
+      });
+    });
+
+    return () => {
+      socket.off("reply:new");
+    };
+  }, [threadId]);
 
   useEffect(() => {
     GetThread();
@@ -157,21 +193,35 @@ export const DetailThread = () => {
 
               <div className="space-y-4">
                 <h2 className="font-semibold">Replies</h2>
-                <form onSubmit={handleCreateReply} className="flex gap-2">
-                  <input
-                    value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder="Tulis reply..."
-                    className="flex-1 rounded-md border px-3 py-2 text-sm"
-                  />
+                <form onSubmit={handleCreateReply} className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
+                      placeholder="Tulis reply..."
+                      className="flex-1"
+                    />
 
-                  <button
-                    type="submit"
-                    className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white"
-                  >
-                    Kirim
-                  </button>
+                    <Button type="submit">Kirim</Button>
+                  </div>
+
+                  <label className="flex w-fit cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm text-muted-foreground hover:bg-muted">
+                    <ImageIcon size={16} />
+                    <span>
+                      {replyImage ? replyImage.name : "Tambah gambar"}
+                    </span>
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) =>
+                        setReplyImage(e.target.files?.[0] || null)
+                      }
+                      className="hidden"
+                    />
+                  </label>
                 </form>
+
                 {thread.thread.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     Belum ada reply.

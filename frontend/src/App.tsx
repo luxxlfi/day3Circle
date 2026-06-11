@@ -7,6 +7,9 @@ import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { Home } from "./pages/Home";
 import { CreateThread } from "./pages/CreaeThread";
 import { DetailThread } from "./pages/DetailThread";
+import { AllUsers } from "./pages/AllUser";
+import { EditProfile } from "./pages/EditProfile";
+import { FollowList } from "./pages/FollowList";
 
 function App() {
   return (
@@ -30,6 +33,34 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/follow-list"
+          element={
+            <ProtectedRoute>
+              <FollowList />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/AllUser"
+          element={
+            <ProtectedRoute>
+              <AllUsers />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/EditProfile"
+          element={
+            <ProtectedRoute>
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/CreateThread"
           element={
@@ -38,7 +69,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-         <Route
+        <Route
           path="/thread/:threadId"
           element={
             <ProtectedRoute>
@@ -46,6 +77,10 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* <Route path="/user/:id" element={
+          <Prod
+          <UserProfile />} /> */}
       </Routes>
     </BrowserRouter>
   );

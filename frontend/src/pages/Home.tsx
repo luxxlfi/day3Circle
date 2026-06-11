@@ -1,4 +1,5 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { RightSidebar } from "@/components/RightSidebar";
 import { ComSidebar } from "@/components/Sidebar";
 import { ThreadCard } from "@/components/ThreadCard";
 import { useEffect, useState } from "react";
@@ -26,6 +27,7 @@ type Thread = {
 };
 export const Home = () => {
   const token = useSelector((state: RootState) => state.auth.token);
+  const user = useSelector((state: RootState) => state.auth.user);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [notifT, setNotif] = useState("");
 
@@ -44,17 +46,14 @@ export const Home = () => {
   };
 
   useEffect(() => {
-    getThreads();
-  }, []);
+    if (!user) return;
+
+    socket.emit("join-user", user.id);
+    console.log("join-user:", user.id);
+  }, [user]);
 
   useEffect(() => {
-    socket.on("thread:new", (newThread: Thread) => {
-      setThreads((prev) => [newThread, ...prev]);
-    });
-
-    return () => {
-      socket.off("thread:new");
-    };
+    getThreads();
   }, []);
 
   useEffect(() => {
@@ -68,8 +67,17 @@ export const Home = () => {
       }, 3000);
     });
 
+    socket.on("reply-notification", (data) => {
+      setNotif(data.message);
+
+      setTimeout(() => {
+        setNotif("");
+      }, 3000);
+    });
+
     return () => {
       socket.off("thread:new");
+      socket.off("reply-notification");
     };
   }, []);
 
@@ -107,6 +115,7 @@ export const Home = () => {
             ))}
           </div>
         </main>
+        <RightSidebar />
       </SidebarProvider>
     </>
   );

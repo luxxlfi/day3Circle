@@ -30,9 +30,7 @@ export const DetailThread = async (req: Request, res: Response) => {
         },
         likes: true,
         thread: {
-          orderBy: {
-            createAt: "desc",
-          },
+          
           include: {
             Users: {
               select: {

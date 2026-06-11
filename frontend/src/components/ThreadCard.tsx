@@ -1,8 +1,17 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { Heart, MessageCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { api } from "@/services/api";
 import { Link } from "react-router-dom";
+import { socket } from "@/lib/socket";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "@/app/store";
+
+import {
+  setInitialLike,
+  updateLike,
+  updateLikeTotal,
+} from "@/features/auth/threadSlice";
 
 type ThreadCardProps = {
   id: number;
@@ -31,11 +40,47 @@ export const ThreadCard = ({
   token,
   author,
 }: ThreadCardProps) => {
-  const [liked, setLiked] = useState(isLiked);
-  const [likeTotal, setLikeTotal] = useState(likesCount);
+  const dispatch = useDispatch<AppDispatch>();
+  const likeData = useSelector((state: RootState) => state.thread.likes[id]);
+  const liked = likeData?.liked ?? isLiked;
+  const likeTotal = likeData?.likeTotal ?? likesCount;
 
- 
- const handleLike = async () => {
+  useEffect(() => {
+    dispatch(
+      setInitialLike({
+        threadId: id,
+        liked: isLiked,
+        likeTotal: likesCount,
+      }),
+    );
+  }, [dispatch, id, isLiked, likesCount]);
+
+  useEffect(() => {
+    // bikin function biar socket.off aman
+    const handleLikeUpdate = (data: {
+      threadId: number;
+      likeTotal: number;
+    }) => {
+      if (Number(data.threadId) !== Number(id)) return;
+
+
+      // update likeTotal lewat Redux
+      dispatch(
+        updateLikeTotal({
+          threadId: id,
+          likeTotal: data.likeTotal,
+        }),
+      );
+    };
+
+    socket.on("like:update", handleLikeUpdate);
+
+    return () => {
+      socket.off("like:update", handleLikeUpdate);
+    };
+  }, [dispatch, id]);
+
+  const handleLike = async () => {
     try {
       const res = await api.post(
         `/thread/${id}/like`,
@@ -47,13 +92,21 @@ export const ThreadCard = ({
         },
       );
 
-      setLiked(res.data.liked);
-      setLikeTotal((prev) => (res.data.liked ? prev + 1 : prev - 1));
+    
+      // setLiked(res.data.liked);
+      // setLikeTotal(res.data.likeTotal);
+
+      dispatch(
+        updateLike({
+          threadId: id,
+          liked: res.data.liked,
+          likeTotal: res.data.likeTotal,
+        }),
+      );
     } catch (error) {
       console.log(error);
     }
   };
-  console.log(image);
 
   return (
     <div className="rounded-xl border bg-white p-4 shadow-sm transition-all hover:shadow-md">
@@ -78,6 +131,7 @@ export const ThreadCard = ({
               {new Date(createdAt).toLocaleDateString()}
             </p>
           )}
+
           <Link to={`/thread/${id}`}>
             <p className="mt-2 text-sm leading-6 text-slate-800">{content}</p>
 
@@ -89,6 +143,7 @@ export const ThreadCard = ({
               />
             )}
           </Link>
+
           <div className="mt-4 flex items-center gap-8 text-muted-foreground">
             <button
               onClick={handleLike}
@@ -99,6 +154,7 @@ export const ThreadCard = ({
               <Heart size={18} fill={liked ? "currentColor" : "none"} />
               <span className="text-sm">{likeTotal}</span>
             </button>
+
             <Link to={`/thread/${id}`}>
               <button className="flex items-center gap-2 transition-colors hover:text-blue-500">
                 <MessageCircle size={18} />

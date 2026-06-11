@@ -4,13 +4,27 @@ import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import { setUser, logout } from "../features/auth/authSlice";
 import { useNavigate } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { ComSidebar } from "@/components/Sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ThreadCard } from "@/components/ThreadCard";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 type Thread = {
   id: number;
@@ -35,15 +49,24 @@ type User = {
   email: string;
   photo_profile?: string | null;
   bio?: string | null;
+  followierCount: number;
+  followingConunt: number;
   threads: Thread[];
 };
 
 export const Profile = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
-
   const token = useSelector((state: RootState) => state.auth.token);
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+
   const [profileUser, setProfileUser] = useState<User | null>(null);
+
+  const [form, setForm] = useState({
+    username: "",
+    full_name: "",
+    bio: "",
+  });
 
   const getProfile = async () => {
     try {
@@ -53,22 +76,56 @@ export const Profile = () => {
         },
       });
 
+      console.log("PROFILE DATA:", res.data.deta);
+
       setProfileUser(res.data.deta);
       dispatch(setUser(res.data.deta));
+
+      setForm({
+        username: res.data.deta.username || "",
+        full_name: res.data.deta.full_name || "",
+        bio: res.data.deta.bio || "",
+      });
     } catch (error) {
       console.log(error);
     }
   };
 
   useEffect(() => {
-    getProfile();
-  }, []);
+    if (token) {
+      getProfile();
+    }
+  }, [token]);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const res = await api.patch("/user/profile", form, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    dispatch(setUser(res.data.data));
+
+    await getProfile();
+
+    setOpen(false);
+  };
 
   const handleLogout = () => {
     dispatch(logout());
     navigate("/");
   };
-
   return (
     <>
       <SidebarProvider>
@@ -104,7 +161,64 @@ export const Profile = () => {
                       </p>
                     </div>
 
-                    <Button variant="outline">Edit Profile</Button>
+                    <Dialog open={open} onOpenChange={setOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline">Edit Profile</Button>
+                      </DialogTrigger>
+
+                      <DialogContent className="sm:max-w-sm">
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                          <DialogHeader>
+                            <DialogTitle>Edit profile</DialogTitle>
+                            <DialogDescription>
+                              Ubah profile kamu di sini.
+                            </DialogDescription>
+                          </DialogHeader>
+
+                          <FieldGroup>
+                            <Field>
+                              <Label htmlFor="username">Username</Label>
+                              <Input
+                                id="username"
+                                name="username"
+                                value={form.username}
+                                onChange={handleChange}
+                              />
+                            </Field>
+
+                            <Field>
+                              <Label htmlFor="full_name">Full Name</Label>
+                              <Input
+                                id="full_name"
+                                name="full_name"
+                                value={form.full_name}
+                                onChange={handleChange}
+                              />
+                            </Field>
+
+                            <Field>
+                              <Label htmlFor="bio">Bio</Label>
+                              <Textarea
+                                id="bio"
+                                name="bio"
+                                value={form.bio}
+                                onChange={handleChange}
+                              />
+                            </Field>
+                          </FieldGroup>
+
+                          <DialogFooter>
+                            <DialogClose asChild>
+                              <Button type="button" variant="outline">
+                                Cancel
+                              </Button>
+                            </DialogClose>
+
+                            <Button type="submit">Save changes</Button>
+                          </DialogFooter>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
                   </div>
 
                   <p className="mt-4 text-sm text-slate-700">
@@ -121,15 +235,26 @@ export const Profile = () => {
                       <p className="text-sm text-muted-foreground">Threads</p>
                     </div>
 
-                    <div>
-                      <p className="text-xl font-bold">0</p>
-                      <p className="text-sm text-muted-foreground">Followers</p>
-                    </div>
-
-                    <div>
-                      <p className="text-xl font-bold">0</p>
+                    <div
+                      onClick={() => navigate("/follow-list?tab=follower")}
+                      className="cursor-pointer"
+                    >
+                      <p className="text-xl font-bold">
+                        {profileUser.followierCount ?? 0}
+                      </p>
                       <p className="text-sm text-muted-foreground">Following</p>
                     </div>
+
+                    <div
+                      onClick={() => navigate("/follow-list?tab=following")}
+                      className="cursor-pointer"
+                    >
+                      <p className="text-xl font-bold">
+                        {profileUser.followingConunt ?? 0}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Follower</p>
+                    </div>
+
                   </div>
 
                   <Separator className="my-6" />

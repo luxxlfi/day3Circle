@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 import { io } from "../index";
+import { Socket } from "socket.io";
 
 export const CreateThread = async (req: Request, res: Response) => {
   try {
@@ -104,7 +105,7 @@ export const ToggleLikeThread = async (req: Request, res: Response) => {
 
     if (!thread) {
       return res.status(404).json({
-        massage: "thread tidak ditemukan ",
+        message: "thread tidak ditemukan",
       });
     }
 
@@ -115,6 +116,8 @@ export const ToggleLikeThread = async (req: Request, res: Response) => {
       },
     });
 
+    let liked = false;
+
     if (existingLike) {
       await prisma.like.delete({
         where: {
@@ -122,22 +125,35 @@ export const ToggleLikeThread = async (req: Request, res: Response) => {
         },
       });
 
-      return res.status(200).json({
-        message: "like dihapus",
-        liked: false,
+      liked = false;
+    } else {
+      await prisma.like.create({
+        data: {
+          user_id: userLogin.id,
+          thread_id: threadId,
+        },
       });
+
+      liked = true;
     }
 
-    await prisma.like.create({
-      data: {
-        user_id: userLogin.id,
+    const likeTotal = await prisma.like.count({
+      where: {
         thread_id: threadId,
       },
     });
 
-    return res.status(201).json({
-      message: "thread berhasil di-like",
-      liked: true,
+    io.emit("like:update", {
+      threadId,
+      userId: userLogin.id,
+      liked,
+      likeTotal,
+    });
+
+    return res.status(200).json({
+      message: liked ? "thread berhasil di-like" : "like dihapus",
+      liked,
+      likeTotal,
     });
   } catch (error) {
     console.log(error);
@@ -153,7 +169,8 @@ export const createReply = async (req: Request, res: Response) => {
     const { threadId } = req.params;
     const { content } = req.body;
     const userLogin = (req as any).user;
-
+    console.log(req.file);
+    const image = req.file ? `/uploads/reply/${req.file.filename}` : null;
     const id = Number(threadId);
     if (isNaN(id)) {
       return res.status(400).json({
@@ -173,17 +190,26 @@ export const createReply = async (req: Request, res: Response) => {
       });
     }
 
-    if (!content) {
+    if (!content && !image) {
       return res.status(404).json({
         message: "reply haurs di isi",
       });
     }
-
     const reply = await prisma.replies.create({
       data: {
         user_id: userLogin.id,
         thread_Id: id,
         content: content,
+        image: image,
+      },
+      include: {
+        Users: {
+          select: {
+            id: true,
+            username: true,
+            photo_profile: true,
+          },
+        },
       },
     });
 
@@ -196,6 +222,19 @@ export const createReply = async (req: Request, res: Response) => {
           increment: 1,
         },
       },
+    });
+
+    if (thread.created_by !== userLogin.id) {
+      io.to(`user-${thread.created_by}`).emit("reply-notification", {
+        message: `${reply.Users.username} mengomentari postingan kamu`,
+        threadId: thread.id,
+        reply,
+      });
+    }
+
+    io.emit("reply:new", {
+      threadId: id,
+      reply,
     });
 
     return res.status(201).json({

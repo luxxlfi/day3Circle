@@ -20,6 +20,11 @@ router.post(
 router.get("/home", authMiddleware, GetAllThereads);
 router.post("/:id/like", authMiddleware, ToggleLikeThread);
 router.get("/:threadId", authMiddleware, DetailThread);
-router.post("/:threadId/reply", authMiddleware, createReply);
+router.post(
+  "/:threadId/reply",
+  authMiddleware,
+  uploadPath.single("image"),
+  createReply,
+);
 
 export default router;

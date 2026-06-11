@@ -14,7 +14,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { UserDropdown } from "./UserDrop";
-import { CirclePlus, House, UserIcon } from "lucide-react";
+import { CirclePlus, Earth, House, UserIcon } from "lucide-react";
 
 export const ComSidebar = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -32,18 +32,31 @@ export const ComSidebar = () => {
         <div>
           <SidebarGroup>
             <SidebarGroupLabel className="text-lg font-bold">
-              Circle
+              <Earth className="!w-5 !h-5" /> world
             </SidebarGroupLabel>
             <SidebarTrigger />
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="flex gap-y-5">
+                {/* <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate("/AllUser")}
+                    size="lg"
+                  >
+                    <span>
+                      {" "}
+                      <House />
+                    </span>
+                    <span className="text-lg font-medium">User</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem> */}
+
                 <SidebarMenuItem>
                   <SidebarMenuButton onClick={() => navigate("/Home")}>
                     <span>
                       {" "}
                       <House />
                     </span>
-                    <span>Home</span>
+                    <span className="text-lg font-medium">Home</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
@@ -53,7 +66,7 @@ export const ComSidebar = () => {
                       {" "}
                       <CirclePlus />
                     </span>
-                    <span>Create Thread</span>
+                    <span className="text-lg font-medium">Create Thread</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
@@ -61,12 +74,11 @@ export const ComSidebar = () => {
                   <SidebarMenuButton onClick={() => navigate("/profile")}>
                     <span>
                       {" "}
-                      <UserIcon/>
+                      <UserIcon />
                     </span>
-                    <span>Profile</span>
+                    <span className="text-lg font-medium">Profile</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
